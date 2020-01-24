@@ -9,17 +9,39 @@ airlines = browser.find_elements_by_class_name('airlineName')
 print([airline.text for airline in airlines])
 
 airline_section = browser.find_elements_by_class_name("review_button.ui_button.secondary.small")
-browser.find_element_by_tag_name('prw_rup prw_airlines_airline_lander_card')
-
-browser.find_elements_by_class_name('review_button ui_button secondary small')
-
-for airline in airlines:
-    print(airline.get_attribute('href'))
-reviews_buttons = browser.find_elements_by_class_name('review_button ui_button secondary small')
-print([a.get_attribute('href') for a in reviews_buttons])
+airline_links = [a.get_attribute('href') for a in airline_section]
 
 
-search_box.send_keys('ChromeDriver')
-search_box.submit()
-time.sleep(5) # Let the user actually see something!
-driver.quit()
+scraped = []
+
+for link in airline_links:
+    browser.get(link)
+    reviews = browser.find_elements_by_class_name('location-review-card-Card__ui_card--2Mri0.'
+                                                  'location-review-card-Card__card--o3LVm.'
+                                                  'location-review-card-Card__section--NiAcw')
+
+    for review in reviews:
+        print(review)
+        stars_container = review.find_element_by_class_name(
+            "location-review-review-list-parts-RatingLine__bubbles--GcJvM")
+        star = stars_container.find_element_by_tag_name('span').get_attribute("class")
+
+        title_container = review.find_element_by_class_name("location-review-review-list-parts-ReviewTitle"
+                                                            "__reviewTitle--2GO9Z")
+        title = title_container.find_element_by_tag_name('span').text
+
+        comment = review.find_element_by_class_name("location-review-review-list-parts-ExpandableReview"
+                                                    "__reviewText--gOmRC").find_element_by_tag_name('span').text
+
+        scraped.append({'star': star, 'title': title, 'comment': comment})
+
+
+    break
+
+    time.sleep(3)
+
+
+# location-review-card-Card__ui_card--2Mri0.location-review-card-Card__card--o3LVm.location-review-card-Card__section--NiAcw
+# location-review-card-Card__ui_card--2Mri0 location-review-card-Card__card--o3LVm location-review-card-Card__section--NiAcw
+
+# location-review-review-list-parts-RatingLine__bubbles--GcJvM
