@@ -1,47 +1,150 @@
 import time
 from selenium import webdriver
+import pandas as pd
+from datetime import datetime
+
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 browser = webdriver.Chrome(
     '/Users/michaelullah/Documents/DSBA/CS/S2/SuperCase-elevenstrategy/NLP_Interior_Airline_Services/chromedriver')
 
 browser.get('https://www.tripadvisor.com/Airlines')
-airlines = browser.find_elements_by_class_name('airlineName')
-print([airline.text for airline in airlines])
+# airlines = browser.find_elements_by_class_name('airlineName')
+# print([airline.text for airline in airlines])
 
-airline_section = browser.find_elements_by_class_name("review_button.ui_button.secondary.small")
-airline_links = [a.get_attribute('href') for a in airline_section]
+# airline_links = []
+# for i in range(63):
+#     print(i)
+#     airline_sections = browser.find_elements_by_class_name("review_button.ui_button.secondary.small")
+#     airline_links = airline_links + [a.get_attribute('href') for a in airline_sections]
+#     button_next = browser.find_element_by_class_name('nav.next.ui_button.primary')
+#     button_next.click()
+#     time.sleep(1)
+#
+#
+# airlines_links = open('tripadvisor_airlines_links.txt', 'wt')
+# airlines_links.write('\n'.join(set(airline_links)))
+
+
+airlines_links = open('tripadvisor_airlines_links.txt').read().split('\n')
 
 
 scraped = []
 
-for link in airline_links:
+for link in airlines_links:
     browser.get(link)
-    reviews = browser.find_elements_by_class_name('location-review-card-Card__ui_card--2Mri0.'
-                                                  'location-review-card-Card__card--o3LVm.'
-                                                  'location-review-card-Card__section--NiAcw')
+    time.sleep(2)
 
-    for review in reviews:
-        print(review)
-        stars_container = review.find_element_by_class_name(
-            "location-review-review-list-parts-RatingLine__bubbles--GcJvM")
-        star = stars_container.find_element_by_tag_name('span').get_attribute("class")
+    marker = 0
+    while marker == 0:
 
-        title_container = review.find_element_by_class_name("location-review-review-list-parts-ReviewTitle"
-                                                            "__reviewTitle--2GO9Z")
-        title = title_container.find_element_by_tag_name('span').text
+        reviews = browser.find_elements_by_class_name('location-review-card-Card__ui_card--2Mri0.'
+                                                      'location-review-card-Card__card--o3LVm.'
+                                                      'location-review-card-Card__section--NiAcw')
 
-        comment = review.find_element_by_class_name("location-review-review-list-parts-ExpandableReview"
-                                                    "__reviewText--gOmRC").find_element_by_tag_name('span').text
+        for review in reviews[:5]:
+            print(review)
 
-        scraped.append({'star': star, 'title': title, 'comment': comment})
+            try:
+                stars_container = review.find_element_by_class_name(
+                    "location-review-review-list-parts-RatingLine__bubbles--GcJvM")
+                star = stars_container.find_element_by_tag_name('span').get_attribute("class")
+            except:
+                star = ""
 
+            try:
+                title_container = review.find_element_by_class_name("location-review-review-list-parts-ReviewTitle"
+                                                                    "__reviewTitle--2GO9Z")
+                title = title_container.find_element_by_tag_name('span').text
+            except:
+                title = ""
+
+            try:
+                comment = review.find_element_by_class_name("location-review-review-list-parts-ExpandableReview"
+                                                            "__reviewText--gOmRC").find_element_by_tag_name('span').text
+            except:
+                comment = ""
+
+            try:
+                date = review.find_element_by_class_name(
+                    'social-member-event-MemberEventOnObjectBlock__event_type--3njyv').text
+            except:
+                date = ""
+
+            try:
+                contributions = review.find_element_by_class_name('social-member-MemberHeaderStats__bold--3z3qh').text
+            except:
+                contributions = ""
+
+
+            review.\
+                find_element_by_class_name(
+                'location-review-review-list-parts-ExpandableReview__cta--2mR2g').click()
+
+
+                # legroom = review.\
+                #     find_element_by_class_name(
+                #     'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT').\
+                #     find_element_by_tag_name('span').\
+                #     get_attribute("class")
+                #
+                # customer_service = review.\
+                #     find_element_by_class_name(
+                #     'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT').\
+                #     find_element_by_tag_name('span').\
+                #     get_attribute("class")
+                #
+                # seat_comfort = review.\
+                #     find_element_by_class_name(
+                #     'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT').\
+                #     find_element_by_tag_name('span').\
+                #     get_attribute("class")
+                #
+                # value_for_money = review.\
+                #     find_element_by_class_name(
+                #     'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT').\
+                #     find_element_by_tag_name('span').\
+                #     get_attribute("class")
+
+
+
+            print(comment)
+
+            if any([star != "", title != "", comment != "", date != "", contributions != ""]):
+                scraped.append(
+                    {'star': star, 'title': title, 'comment': comment, 'date': date, 'contributions': contributions})
+
+            time.sleep(1)
+
+        try:
+            button_next = browser.find_element_by_class_name('ui_button.nav.next.primary')
+            button_next.click()
+            time.sleep(1)
+        except:
+            marker = 1
+        break
 
     break
 
-    time.sleep(3)
 
 
-# location-review-card-Card__ui_card--2Mri0.location-review-card-Card__card--o3LVm.location-review-card-Card__section--NiAcw
-# location-review-card-Card__ui_card--2Mri0 location-review-card-Card__card--o3LVm location-review-card-Card__section--NiAcw
 
-# location-review-review-list-parts-RatingLine__bubbles--GcJvM
+
+
+
+
+
+# browser.close()
+
+scraped = pd.DataFrame(scraped)
+# scraped.dropna(axis=0, inplace=True)
+scraped.shape
+
+now = datetime.now()
+
+scraped.to_csv('scraped' + str(now) + '.csv')
+
+'location-review-review-list-parts-ExpandableReview__ctaLine--24Qlb'
+
