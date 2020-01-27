@@ -36,6 +36,10 @@ for link in airlines_links:
 
     k = 0
 
+    read_more = browser.find_element_by_class_name(
+            'location-review-review-list-parts-ExpandableReview__cta--2mR2g').click()
+
+
     try:
         airline = browser.find_element_by_class_name(
             'flights-airline-review-page-airline-review-header-AirlineDetailHeader__airlineName--2JeT1').text
@@ -43,7 +47,7 @@ for link in airlines_links:
         airline = ''
 
     marker = 0
-    while marker == 0 & k <= 10:
+    while marker == 0 & k <= 2:
         k += 1
 
         reviews = browser.find_elements_by_class_name('location-review-card-Card__ui_card--2Mri0.'
@@ -52,6 +56,18 @@ for link in airlines_links:
 
         for review in reviews[:5]:
             print(review)
+
+            try:
+
+                comment = review.find_element_by_class_name("location-review-review-list-parts-ExpandableReview"
+                                                            "__reviewText--gOmRC").find_element_by_tag_name('span').click()
+
+                comment = review.find_element_by_class_name("location-review-review-list-parts-ExpandableReview"
+                                                            "__reviewText--gOmRC").find_element_by_tag_name('span').text
+            except:
+                comment = ""
+
+            print(comment)
 
             try:
                 stars_container = review.find_element_by_class_name(
@@ -67,11 +83,6 @@ for link in airlines_links:
             except:
                 title = ""
 
-            try:
-                comment = review.find_element_by_class_name("location-review-review-list-parts-ExpandableReview"
-                                                            "__reviewText--gOmRC").find_element_by_tag_name('span').text
-            except:
-                comment = ""
 
             try:
                 date = review.find_element_by_class_name(
@@ -84,7 +95,7 @@ for link in airlines_links:
             except:
                 contributions = ""
 
-            print(comment)
+
 
             if any([star != "", title != "", comment != "", date != "", contributions != ""]):
                 scraped.append(
