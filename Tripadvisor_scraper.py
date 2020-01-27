@@ -34,6 +34,8 @@ for link in airlines_links:
     browser.get(link)
     time.sleep(2)
 
+    k = 0
+
     try:
         airline = browser.find_element_by_class_name(
             'flights-airline-review-page-airline-review-header-AirlineDetailHeader__airlineName--2JeT1').text
@@ -41,7 +43,8 @@ for link in airlines_links:
         airline = ''
 
     marker = 0
-    while marker == 0:
+    while marker == 0 & k <= 10:
+        k += 1
 
         reviews = browser.find_elements_by_class_name('location-review-card-Card__ui_card--2Mri0.'
                                                       'location-review-card-Card__card--o3LVm.'
@@ -96,11 +99,8 @@ for link in airlines_links:
         except:
             marker = 1
 
-
-        break
-
     scraped = pd.DataFrame(scraped)
-    scraped.to_csv('scraped_test' + '.csv')
+    scraped.to_csv('scraped' + str(airline) + '.csv')
 
 
 
