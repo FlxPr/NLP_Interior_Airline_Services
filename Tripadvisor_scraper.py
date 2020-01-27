@@ -94,7 +94,7 @@ for batch in range(51):
                 time.sleep(1)
             except:
                 marker = 1
-
+    break
 
 
 
@@ -107,3 +107,4 @@ for batch in range(51):
     scraped.to_csv('scraped' + str(batch) + '.csv')
 
 
+# provide insights geographcally, by business / economic class.
