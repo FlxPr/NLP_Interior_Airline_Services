@@ -34,11 +34,8 @@ for link in airlines_links:
     browser.get(link)
     time.sleep(2)
 
-    k = 0
-
     read_more = browser.find_element_by_class_name(
             'location-review-review-list-parts-ExpandableReview__cta--2mR2g').click()
-
 
     try:
         airline = browser.find_element_by_class_name(
@@ -46,8 +43,10 @@ for link in airlines_links:
     except:
         airline = ''
 
-    marker = 0
-    while marker == 0 & k <= 2:
+    is_next_button_clickable = 1
+    k = 0
+    while is_next_button_clickable == 1 and k <= 200:
+        print(k)
         k += 1
 
         reviews = browser.find_elements_by_class_name('location-review-card-Card__ui_card--2Mri0.'
@@ -95,29 +94,50 @@ for link in airlines_links:
             except:
                 contributions = ""
 
+            try:
+                infos_container = review.find_elements_by_class_name(
+                    'location-review-review-list-parts-RatingLine__labelBtn--e58BL')
+                route = infos_container[0].text
+                area = infos_container[1].text
+                trip_class = infos_container[2].text
+            except:
+                route = ''
+                area = ''
+                trip_class = ''
 
+            basics_dict = {'airline': airline,
+                           'star': star,
+                           'title': title,
+                           'comment': comment,
+                           'date': date,
+                           'contributions': contributions,
+                           'route': route,
+                           'area': area,
+                           'trip_class': trip_class}
+
+            details_dict = {}
+            details = review.find_elements_by_class_name(
+                'location-review-review-list-parts-AdditionalRatings__rating--1_G5W')
+            for detail in details:
+                key = detail.text
+                value = detail.find_element_by_class_name(
+                    'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT')\
+                    .find_element_by_tag_name('span').get_attribute("class")
+                details_dict[str(key)] = value
 
             if any([star != "", title != "", comment != "", date != "", contributions != ""]):
                 scraped.append(
-                    {'airline': airline, 'star': star, 'title': title, 'comment': comment, 'date': date, 'contributions': contributions})
-
-            time.sleep(1)
+                    {**basics_dict, **details_dict})
+                time.sleep(0.1)
 
         try:
             button_next = browser.find_element_by_class_name('ui_button.nav.next.primary')
             button_next.click()
             time.sleep(1)
         except:
-            marker = 1
+            is_next_button_clickable = 0
 
     scraped = pd.DataFrame(scraped)
     scraped.to_csv('scraped' + str(airline) + '.csv')
 
-
-
-    # browser.close()
-
-
-
-
-
+browser.close()
