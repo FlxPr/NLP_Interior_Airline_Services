@@ -77,7 +77,7 @@ except FileNotFoundError:
 
 moritz_part = slice(340, 430)
 noel_part = slice(430, 520)
-felix_part = slice(540, 560)
+felix_part = slice(540, 610)
 shamir_part = slice(610, 700)
 
 browser = webdriver.Chrome(chrome_options=chrome_options)
