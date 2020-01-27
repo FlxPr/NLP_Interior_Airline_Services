@@ -29,7 +29,7 @@ browser = Chrome(
 airlines_links = open('tripadvisor_airlines_links_shortlist.txt').read().split('\n')
 
 
-for link in airlines_links:
+for link in airlines_links[3:4]:
     scraped = []
     browser.get(link)
     time.sleep(2)
@@ -116,24 +116,27 @@ for link in airlines_links:
                            'trip_class': trip_class}
 
             details_dict = {}
-            details = review.find_elements_by_class_name(
-                'location-review-review-list-parts-AdditionalRatings__rating--1_G5W')
-            for detail in details:
-                key = detail.text
-                value = detail.find_element_by_class_name(
-                    'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT')\
-                    .find_element_by_tag_name('span').get_attribute("class")
-                details_dict[str(key)] = value
+
+            try:
+                details = review.find_elements_by_class_name(
+                    'location-review-review-list-parts-AdditionalRatings__rating--1_G5W')
+                for detail in details:
+                    key = detail.text
+                    value = detail.find_element_by_class_name(
+                        'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT')\
+                        .find_element_by_tag_name('span').get_attribute("class")
+                    details_dict[str(key)] = value
+            except:
+                pass
 
             if any([star != "", title != "", comment != "", date != "", contributions != ""]):
                 scraped.append(
                     {**basics_dict, **details_dict})
-                time.sleep(0.1)
 
         try:
             button_next = browser.find_element_by_class_name('ui_button.nav.next.primary')
             button_next.click()
-            time.sleep(1)
+            time.sleep(2)
         except:
             is_next_button_clickable = 0
 
