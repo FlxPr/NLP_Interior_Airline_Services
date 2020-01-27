@@ -5,7 +5,7 @@ from math import floor
 import time
 
 link_file_name = 'skytrax_reviews_links.txt'
-data_file_name = 'skytrax_reviews_data.csv'
+data_file_name = 'skytrax_reviews_data2.csv'
 
 # Makes selenium open Chrome in background
 chrome_options = Options()
@@ -76,7 +76,7 @@ except FileNotFoundError:
 
 moritz_part = slice(340, 430)
 noel_part = slice(430, 520)
-felix_part = slice(520, 610)
+felix_part = slice(570, 610)
 shamir_part = slice(610, 700)
 
 browser = webdriver.Chrome(chrome_options=chrome_options)
