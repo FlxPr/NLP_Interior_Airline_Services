@@ -1,16 +1,19 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import pandas as pd
+from math import floor
+import time
 
 link_file_name = 'skytrax_reviews_links.txt'
 data_file_name = 'skytrax_reviews_data.csv'
 
 # Makes selenium open Chrome in background
-chrome_options = Options()  
-chrome_options.add_argument("--headless") 
-
+chrome_options = Options()
+# UNCOMMENT TO HAVE BROWSER RUN IN BACKGROUND
+# chrome_options.add_argument("--headless")
 
 def get_links():
+    # USE THE SAME LINK LIST AS I SENT AND DO NOT CALL THIS (the links will be in a different order and we might miss some pages)
     links = list()
     browser = webdriver.Chrome(chrome_options=chrome_options)
     for review_link in ['https://www.airlinequality.com/review-pages/a-z-{review_type}-reviews/'
@@ -32,19 +35,61 @@ links = open(link_file_name).read().split('\n')
 try:
     data = pd.read_csv(data_file_name, index_col=None)
 except FileNotFoundError:
-    data = pd.DataFrame()
+    data = pd.DataFrame(columns=['Aircraft',
+                                 'Aircraft Type',
+                                 'Aisle Space',
+                                 'Cabin Staff Service',
+                                 'Date Flown',
+                                 'Food & Beverages',
+                                 'Ground Service',
+                                 'Inflight Entertainment',
+                                 'Power Supply',
+                                 'Recommended',
+                                 'Route',
+                                 'Seat Comfort',
+                                 'Seat Layout',
+                                 'Seat Legroom',
+                                 'Seat Privacy',
+                                 'Seat Recline',
+                                 'Seat Storage',
+                                 'Seat Type',
+                                 'Seat Width',
+                                 'Seat/bed Length',
+                                 'Seat/bed Width',
+                                 'Sitting Comfort',
+                                 'Sleep Comfort',
+                                 'Type Of Traveller',
+                                 'Unnamed: 0',
+                                 'Unnamed: 0.1',
+                                 'Value For Money',
+                                 'Viewing Tv Screen',
+                                 'Wifi & Connectivity',
+                                 'airline',
+                                 'best_rating',
+                                 'comment',
+                                 'comment_date',
+                                 'header',
+                                 'rating',
+                                 'review_type'])
     data.to_csv(data_file_name)
 
-for link in links[220:250]:  # TODO DEL
-    browser = webdriver.Chrome(chrome_options=chrome_options)
+
+moritz_part = slice(340, 430)
+noel_part = slice(430, 520)
+felix_part = slice(520, 610)
+shamir_part = slice(610, 700)
+
+browser = webdriver.Chrome(chrome_options=chrome_options)
+for link in links[felix_part]:
+    tic = time.time()
     browser.get(link + '/?sortby=post_date%3ADesc&pagesize=10000')  # show all reviews in one page
     airline_name = browser.find_element_by_class_name('info').find_element_by_tag_name('h1').text
     review_type = browser.find_element_by_class_name('info').find_element_by_tag_name('h2').text
-    if review_type in data[data.airline == airline_name].review_type:
+    if review_type in data[data.airline == airline_name].review_type.unique():
         print('Already scraped {review_type} for {airline_name}'
               .format(review_type=review_type, airline_name=airline_name))
         continue
-    print('Scraping {}'.format(airline_name))
+    print('Scraping {airline} {review}'.format(airline=airline_name, review=review_type))
     reviews_container = browser.find_element_by_tag_name('article')
     reviews = reviews_container.find_elements_by_tag_name('article')
     data_lines = []
@@ -69,7 +114,8 @@ for link in links[220:250]:  # TODO DEL
             except Exception:
                 pass
         data_lines.append(data_line)
-    browser.close()
     data = data.append(pd.DataFrame(data_lines))
     data.to_csv(data_file_name, index=None)
-
+    toc = time.time()
+    print('Scraped {n_records} in {seconds} seconds'.format(n_records=len(data_lines), seconds=floor(toc-tic)))
+    time.sleep(0.5)
