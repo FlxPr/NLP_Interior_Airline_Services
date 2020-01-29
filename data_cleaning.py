@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import re
 import nltk
-from spellchecker import SpellChecker
 import gensim
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.porter import PorterStemmer
@@ -12,8 +11,8 @@ from pprint import pprint
 import itertools
 
 
-# nltk.download('wordnet')
-# nltk.download('punk')
+nltk.download('wordnet')
+nltk.download('punkt')
 
 def clean_aircraft_string(aircraft_string):
     if type(aircraft_string) == str:
@@ -113,8 +112,41 @@ def create_sentence_dataframe(comment_dataframe):
     return id_sentence_dataframe
 
 
+def combining_skytrax_tripadvisor(df_skytrax, df_tripadvisor):
+    skytrax_df = df_skytrax
+    tripadvisor_df = df_tripadvisor
+
+    dict_columns_to_rename = {'star': 'rating',
+                              'title': 'header',
+                              'comment': 'comment',
+                              'date': 'comment_date',
+                              'route': 'Route',
+                              'trip_class': 'Seat Type',
+                              'Legroom': 'Seat Legroom',
+                              'Seat comfort': 'Seat Comfort',
+                              'In-flight Entertainment': 'Inflight Entertainment',
+                              'Value for money': 'Value For Money',
+                              'Food and Beverage': 'Food & Beverages'}
+
+    tripadvisor_df.rename(columns=dict_columns_to_rename, inplace=True)
+
+    tripadvisor_df['Seat Type'].replace(to_replace='Economy', value='Economy Class')
+    tripadvisor_df['best_rating'] = 5
+
+    tripadvisor_df['Website'] = 'Tripadvisor'
+    skytrax_df['Website'] = 'Skytrax'
+
+    aggregated_df = skytrax_df.append(tripadvisor_df, sort=True)
+    return aggregated_df
+
+
 if __name__ == '__main__':
-    df = pd.read_csv('skytrax_reviews_data.csv')
+
+    df_skytrax = pd.read_csv('skytrax_reviews_data.csv')
+    df_tripadvisor = pd.read_csv('tripadvisor_all_clean.csv')
+    df_tripadvisor = df_tripadvisor.dropna()
+
+    df = combining_skytrax_tripadvisor(df_skytrax, df_tripadvisor)
     df['comment_id'] = df.index
 
     # Clean column names
