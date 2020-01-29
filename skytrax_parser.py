@@ -5,7 +5,7 @@ from math import floor
 import time
 
 link_file_name = 'skytrax_reviews_links.txt'
-data_file_name = 'skytrax_reviews_data3.csv'
+data_file_name = 'skytrax_reviews_datatest.csv'
 reviews_per_page = 50  # Big number of reviews shown per page makes scraping inefficient
 
 # Makes selenium open Chrome in background
@@ -13,7 +13,7 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")
 
 
-def get_links():
+def get_links(file_path=link_file_name):
     """
     Gets all links to reviews per airline and per type for skytrax, sorts them and saves result to text file
     :return: None
@@ -33,7 +33,7 @@ def get_links():
 
     # Save sorted unique links in text file
     link_list = sorted(list(set(link_list)))
-    link_file = open(link_file_name, 'wt')
+    link_file = open(file_path, 'wt')
     link_file.write('\n'.join(link_list))
 
 
@@ -116,10 +116,11 @@ def scrap_airline(link, browser, scraped_data):
         data_lines.extend(scrap_page(browser, airline_name, review_type))
         browser.get(link + '/page/{}/?sortby=post_date%3ADesc&pagesize={}'.format(page_number, reviews_per_page))
 
-    scraped_data = scraped_data.append(pd.DataFrame(data_lines))
-    scraped_data.to_csv(data_file_name, index=None)
     toc = time.time()
     print('scraped {n_records} in {seconds} seconds'.format(n_records=len(data_lines), seconds=floor(toc - tic)))
+
+    scraped_data = scraped_data.append(pd.DataFrame(data_lines))
+    scraped_data.to_csv(data_file_name, index=None)
     time.sleep(1)
 
 
@@ -151,4 +152,4 @@ if __name__ == '__main__':
     #     links = open(link_file_name).read().split('\n')
 
     links = open(link_file_name).read().split('\n')
-    scrap_skytrax(links[50:])
+    scrap_skytrax(links[3:4])
