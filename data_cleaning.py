@@ -84,7 +84,7 @@ def tokenize_lemma_stem(comment):
                 and (len(token) > 3
                      or token in ['leg', 'arm', 'eye', 'old', 'bag', 'hip', 'eat',
                                   'row', 'low', 'big', 'age', 'hot', 'kid', 'gap']):
-            result.append(PorterStemmer().stem(WordNetLemmatizer().lemmatize(token, pos='v')))
+            result.append(PorterStemmer().stem(WordNetLemmatizer().lemmatize(token, pos='n')))
     return result
 
 
