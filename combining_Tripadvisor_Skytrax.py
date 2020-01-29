@@ -25,3 +25,5 @@ tripadvisor_df['Website'] = 'Tripadvisor'
 skytrax_df['Website'] = 'Skytrax'
 
 aggregated_df = skytrax_df.append(tripadvisor_df, sort=True)
+
+aggregated_df.to_csv('Skytrax_and_Tripadvisor.csv')
