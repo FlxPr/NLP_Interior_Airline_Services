@@ -16,6 +16,7 @@ import en_core_web_sm
 
 nlp = en_core_web_sm.load()
 
+
 def clean_aircraft_string(aircraft_string):
     """
     Normalizes aircraft string, eg AIRBUS A380 -> a380
@@ -121,8 +122,6 @@ def clean_comment_string(comment_string):
     comment_string = delete_verified_review_prefix(comment_string)
     comment_string = reduce_word_exaggeration(comment_string)
     comment_string = remove_characters(comment_string)
-
-    # TODO put other functions in there
     return comment_string
 
 
@@ -133,13 +132,15 @@ def tokenize_lemma_stem(comment):
     :return: list of stemmed and lemmatized tokens excluding the stop words
     """
     result = []
-    for token in gensim.utils.simple_preprocess(comment):
-        if token not in gensim.parsing.preprocessing.STOPWORDS\
-                and (len(token) > 3
-                     or token in ['leg', 'arm', 'eye', 'old', 'bag', 'hip', 'eat',
-                                  'row', 'low', 'big', 'age', 'hot', 'kid', 'gap']):
-            result.append(PorterStemmer().stem(WordNetLemmatizer().lemmatize(token, pos='n')))
-    return result
+    if type(comment) == str:
+        for token in gensim.utils.simple_preprocess(comment):
+            if token not in gensim.parsing.preprocessing.STOPWORDS\
+                    and (len(token) > 3
+                         or token in ['leg', 'arm', 'eye', 'old', 'bag', 'hip', 'eat',
+                                      'row', 'low', 'big', 'age', 'hot', 'kid', 'gap']):
+             result.append(PorterStemmer().stem(WordNetLemmatizer().lemmatize(token, pos='n')))
+        return result
+    return np.nan
 
 
 # def spell_correct(data_frame):  # TODO integrate in tokenizer
@@ -150,12 +151,12 @@ def tokenize_lemma_stem(comment):
 #     words = set.union(*[set(comment.split(' ')) for comment in df.comment.str.lower()])
 
 
-def create_sentence_dataframe(comment_dataframe, keep_nouns_only=False):
+def create_sentence_dataframe(comment_dataframe, filter_nouns=False):
     """
-    Splits the reviews by sentence for topic modelling
+    Splits the reviews by sentence for topic modelling. Keeps track of original comment of the sentence
     :param comment_dataframe: Dataframe containing the cleaned reviews
-    :param keep_nouns_only: If True, applies part-of-speech recognition to keep only the nouns (useful for topic
-                            modeling). Time-intensive process
+    :param filter_nouns: If True, applies part-of-speech recognition to keep only the nouns (useful for topic
+                            modeling). Time-intensive process.
     :return: Dataframe containing sentences and the corresponding id of the original comment
     """
     comment_dataframe.comment = comment_dataframe.comment.apply(delete_verified_review_prefix)
@@ -163,11 +164,23 @@ def create_sentence_dataframe(comment_dataframe, keep_nouns_only=False):
     id_sentence_list = []
     for _, comment_row in comment_dataframe.iterrows():
         sentences = tokenizer.tokenize(comment_row['comment'])
-        for i in range(len(sentences)):
-            sentences[i] = ' '.join([word.text for word in nlp(sentences[i]) if word.pos_ == 'NOUN'])
-        id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences), sentences))
+        sentences_with_only_nouns = []
+        if filter_nouns:
+            for i in range(len(sentences)):
+                sentences_with_only_nouns.append(' '.join([word.text for word in nlp(sentences[i])
+                                                           if word.pos_ == 'NOUN']))
+
+                id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences),
+                                            sentences,
+                                            sentences_with_only_nouns))
+        else:
+            id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences),
+                                        sentences))
+
     id_sentence_list = itertools.chain.from_iterable(id_sentence_list)
-    id_sentence_dataframe = pd.DataFrame(id_sentence_list, columns=['comment_id', 'sentence'])
+
+    id_sentence_dataframe = pd.DataFrame(id_sentence_list, columns=['comment_id', 'sentence', 'nouns']
+                                                                   if filter_nouns else ['comment_id', 'sentence'])
     return id_sentence_dataframe
 
 
@@ -202,11 +215,10 @@ def merge_skytrax_tripadvisor_data(df_skytrax, df_tripadvisor):
     return aggregated_df
 
 
-
 if __name__ == '__main__':
-    df = pd.read_csv('skytrax_reviews_data.csv').dropna(subset=['comment'])
-    # df_tripadvisor = pd.read_csv('tripadvisor_all_clean.csv').dropna(subset=['comment'])
-    # df = merge_skytrax_tripadvisor_data(df, df_tripadvisor)
+    df_skytrax = pd.read_csv('Scraped_data/Skytrax/skytrax_reviews_data.csv').dropna(subset=['comment'])
+    df_tripadvisor = pd.read_csv('Scraped_data/Tripadvisor/tripadvisor_reviews_data.csv').dropna(subset=['comment'])
+    df = merge_skytrax_tripadvisor_data(df_skytrax, df_tripadvisor)
 
     # Clean column names
     df.columns = df.columns.str.replace('&', 'and')
@@ -235,9 +247,10 @@ if __name__ == '__main__':
     # Save cleaned dataset to csv file
     df.to_csv('cleaned_reviews.csv', index=None)
 
-    # Create sentence dataframe for topic modeling. Keep_nouns_only is time consuming but discards noisy adjectives
+    # Create sentence dataframe for topic modeling. Keep_nouns_only=True is time consuming but discards noisy adjectives
+    filter_nouns_in_sentences = True
     df['comment_id'] = df.index
-    df_sentences = create_sentence_dataframe(df, keep_nouns_only=True)
-    df_sentences['comment_token_stem_lemma'] = df_sentences.sentence.apply(tokenize_lemma_stem)
-    df_sentences.to_csv('noun_sentences_for_topic_modelling.csv', index=None)
+    df_sentences = create_sentence_dataframe(df, filter_nouns=filter_nouns_in_sentences)
+    df_sentences.to_csv('noun_sentences_for_topic_modeling.csv' if filter_nouns_in_sentences
+                        else 'sentences_for_topic_modeling', index=None)
 
