@@ -125,7 +125,7 @@ def clean_comment_string(comment_string):
     return comment_string
 
 
-def tokenize_lemma_stem(comment):
+def tokenize_lemma_stem(comment, pos='n'):
     """
     Removes stopwords, preprocesses, lemmatizes and stems the words
     :param comment: string containing the review
@@ -161,9 +161,7 @@ def create_sentence_dataframe(comment_dataframe, filter_nouns=False):
     """
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     id_sentence_list = []
-    count = 0
     for _, comment_row in comment_dataframe.iterrows():
-        print(count)
         sentences = tokenizer.tokenize(comment_row['comment'])
         sentences_with_only_nouns = []
         if filter_nouns:
@@ -173,9 +171,7 @@ def create_sentence_dataframe(comment_dataframe, filter_nouns=False):
 
                 id_sentence_list.append([comment_row['comment_id'], sentences[i], sentences_with_only_nouns[i]])
         else:
-            id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences),
-                                        sentences))
-        count = count + 1
+            id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences), sentences))
 
     id_sentence_dataframe = pd.DataFrame(id_sentence_list, columns=['comment_id', 'sentence', 'nouns']
                                                            if filter_nouns else ['comment_id', 'sentence'])

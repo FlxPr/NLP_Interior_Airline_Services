@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     # TOPIC MODEL - Create dictionary
     dictionary = gensim.corpora.Dictionary(df['comment_token_stem_lemma'])
-    dictionary.filter_extremes(no_below=50, no_above=0.20, keep_n=100000)
+    dictionary.filter_extremes(no_below=50, no_above=0.30, keep_n=100000)
     dictionary.save('Models/dictionary')
     print("Dictionary saved")
 
@@ -80,19 +80,21 @@ if __name__ == '__main__':
 
     # # Run LDA using Bag of Words
     df['bow_corpus'] = df.comment_token_stem_lemma.apply(lambda doc: dictionary.doc2bow(doc))
-    lda_model_bag_of_words = gensim.models.LdaMulticore(df.bow_corpus, num_topics=num_topics, id2word=dictionary,
-                                                        passes=2, workers=4)
-    print('Topics using Bag-Of-Words')
-    for sentence_index, topic in lda_model_bag_of_words.print_topics(-1):
-        print('Topic: {} Word: {}'.format(sentence_index, topic))
-    lda_model_bag_of_words.save('Models/LDA_bag_of_words')
-    print("LDA model with Bag of Words saved")
+    for num_topics in range(5, 20):
+        lda_model_bag_of_words = gensim.models.LdaMulticore(df.bow_corpus, num_topics=num_topics, id2word=dictionary,
+                                                            passes=2, workers=4)
+        print('Topics using Bag-Of-Words with {} topics'.format(num_topics))
+        for sentence_index, topic in lda_model_bag_of_words.print_topics(-1):
+            print('Topic: {} Word: {}'.format(sentence_index, topic))
+        lda_model_bag_of_words.save('Models/LDA_bag_of_words_{}_topics'.format(num_topics))
+        print("LDA model with Bag of Words saved")
 
     # Run LDA using TF-IDF
     tfidf = gensim.models.TfidfModel(list(df.bow_corpus))
     corpus_tfidf = tfidf[list(df.bow_corpus)]
     lda_model_tfidf = gensim.models.LdaMulticore(corpus_tfidf, num_topics=num_topics, id2word=dictionary, passes=2,
                                                  workers=4)
+
     print('Topics using TF-IDF')
     for idx, topic in lda_model_tfidf.print_topics(-1):
         print('Topic: {} Word: {}'.format(idx, topic))
@@ -109,22 +111,6 @@ if __name__ == '__main__':
 
     # Classify sentences by topic
     lda_model_bag_of_words = gensim.models.LdaMulticore.load('lda_model')
-    interesting_topics = [0, 7, 12]
 
     df['sentence_topic'] = df.bow_corpus.apply(lda_model_bag_of_words.get_document_topics)
     df.to_csv('sentences_classified.csv')
-
-    # Stick back the sentences with topics to original dataframe
-    split_sentences_data = dict.fromkeys(df.comment_id.unique())
-    for comment_id in split_sentences_data.keys():
-        split_sentences_data[comment_id] = dict.fromkeys(interesting_topics)
-        for topic in interesting_topics:
-            split_sentences_data[comment_id][topic] = []
-
-    for _, row in df.iterrows():
-        split_sentences_data[row.comment_id][row.sentence_best_topic].append(row.sentence)
-
-    topic_df = pd.DataFrame(split_sentences_data).transpose()
-    full_comment_df = pd.read_csv('Scraped_data/Skytrax/skytrax_reviews_data.csv')
-    full_comment_df = full_comment_df.join(topic_df)
-    full_comment_df.to_csv(data_output_path)
