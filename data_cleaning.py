@@ -137,7 +137,7 @@ def tokenize_lemma_stem(comment):
             if token not in gensim.parsing.preprocessing.STOPWORDS\
                     and (len(token) > 3
                          or token in ['leg', 'arm', 'eye', 'old', 'bag', 'hip', 'eat',
-                                      'row', 'low', 'big', 'age', 'hot', 'kid', 'gap']):
+                                      'row', 'low', 'big', 'age', 'hot', 'kid', 'gap', 'ife']):
              result.append(PorterStemmer().stem(WordNetLemmatizer().lemmatize(token, pos='n')))
         return result
     return np.nan
@@ -159,28 +159,26 @@ def create_sentence_dataframe(comment_dataframe, filter_nouns=False):
                             modeling). Time-intensive process.
     :return: Dataframe containing sentences and the corresponding id of the original comment
     """
-    comment_dataframe.comment = comment_dataframe.comment.apply(delete_verified_review_prefix)
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     id_sentence_list = []
+    count = 0
     for _, comment_row in comment_dataframe.iterrows():
+        print(count)
         sentences = tokenizer.tokenize(comment_row['comment'])
         sentences_with_only_nouns = []
         if filter_nouns:
             for i in range(len(sentences)):
                 sentences_with_only_nouns.append(' '.join([word.text for word in nlp(sentences[i])
-                                                           if word.pos_ == 'NOUN']))
+                                                           if word.pos_ == 'NOUN' and len(word) > 2]))
 
-                id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences),
-                                            sentences,
-                                            sentences_with_only_nouns))
+                id_sentence_list.append([comment_row['comment_id'], sentences[i], sentences_with_only_nouns[i]])
         else:
             id_sentence_list.append(zip([comment_row['comment_id']] * len(sentences),
                                         sentences))
-
-    id_sentence_list = itertools.chain.from_iterable(id_sentence_list)
+        count = count + 1
 
     id_sentence_dataframe = pd.DataFrame(id_sentence_list, columns=['comment_id', 'sentence', 'nouns']
-                                                                   if filter_nouns else ['comment_id', 'sentence'])
+                                                           if filter_nouns else ['comment_id', 'sentence'])
     return id_sentence_dataframe
 
 
@@ -216,9 +214,9 @@ def merge_skytrax_tripadvisor_data(df_skytrax, df_tripadvisor):
 
 
 if __name__ == '__main__':
-    df_skytrax = pd.read_csv('Scraped_data/Skytrax/skytrax_reviews_data.csv').dropna(subset=['comment'])
-    df_tripadvisor = pd.read_csv('Scraped_data/Tripadvisor/tripadvisor_reviews_data.csv').dropna(subset=['comment'])
-    df = merge_skytrax_tripadvisor_data(df_skytrax, df_tripadvisor)
+    df = pd.read_csv('Scraped_data/Skytrax/skytrax_reviews_data.csv').dropna(subset=['comment'])
+    #df_tripadvisor = pd.read_csv('Scraped_data/Tripadvisor/tripadvisor_reviews_data.csv').dropna(subset=['comment'])
+    #df = merge_skytrax_tripadvisor_data(df_skytrax, df_tripadvisor)
 
     # Clean column names
     df.columns = df.columns.str.replace('&', 'and')
