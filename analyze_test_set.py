@@ -3,6 +3,10 @@ from data_cleaning import create_sentence_dataframe, clean_comment_string, token
 import gensim
 from operator import itemgetter
 import numpy as np
+from sentiment_analysis import text_fit
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from data_cleaning import tokenize_lemma_stem
 
 
 # Load test set
@@ -15,7 +19,7 @@ test_set.comment = test_set.comment.apply(lambda x: x.lower())
 test_set.comment = test_set.comment.apply(clean_comment_string)
 
 # Load pre-trained topic modeling dictionary and model
-lda_model = gensim.models.LdaMulticore.load('Models/lda_model')
+lda_model = gensim.models.LdaMulticore.load('Models/LDA_bag_of_words_{}_topics')
 dictionary = gensim.corpora.Dictionary.load('Models/dictionary')
 
 sentence_dataframe = create_sentence_dataframe(test_set, filter_nouns=True)
@@ -25,19 +29,11 @@ sentence_dataframe['topics'] = sentence_dataframe.bow_corpus.apply(lda_model.get
 sentence_dataframe['most_likely_topic'] = sentence_dataframe.topics.apply(lambda x: max(x, key=itemgetter(1))[0])
 
 
-topics = {0: 'a',
-          1: 'b',
-          2: 'c',
-          3: 'd',
-          4: 'e',
-          5: 'g',
-          6: 'f',
-          7: 'h',
-          8: 'i',
-          9: 'j',
-          10: 'k',
-          11: 'l',
-          12: 'm'}
+topics = {0: 'crew_food_and_servings',
+          1: 'check_in_and_delays',
+          2: 'classes',
+          3: 'comfort_and_extras',
+          4: 'entertainment'}
 
 # Join back the sentences with topics to original dataframe
 split_sentences_dictionary = dict.fromkeys(sentence_dataframe.comment_id.unique())
@@ -59,10 +55,24 @@ for topic in topics.values():
 
 
 test_set = test_set.join(topic_df)
-
 test_set = test_set.drop(['comment_id'], axis=1)
 test_set = test_set.replace('', np.nan)
+
+# Re-train sentiment analysis model
+train_set = pd.read_csv('Scraped_data/Skytrax/skytrax_reviews_data.csv').dropna(subset=['rating', 'comment'])
+
+tf_idf = TfidfVectorizer(stop_words='english')
+model_preprocessing, model_sentiment = text_fit(train_set['comment'], train_set['rating'], tf_idf, LogisticRegression())
+
+for topic in topics.values():
+    test_set[topic + '_sentences_preprocessed'] = test_set[topic + '_sentences'].apply(lambda x: model_preprocessing.transform([x]) if type(x) == str else np.nan)
+    test_set[topic + '_sentiment'] = test_set[topic + '_sentences_preprocessed'].apply(lambda x: model_sentiment.predict_proba(x)[0][1] if type(x) != float else np.nan)
+
+
+
+
 test_set = test_set.dropna(axis=1, how='all')
+test_set = test_set.loc[:, ['preprocessed' not in col for col in test_set.columns]]
 
 def remove_unknown_words():
     pass
