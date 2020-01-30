@@ -30,8 +30,6 @@ airlines_links = open('tripadvisor_airlines_links.txt').read().split('\n')
 
 already_scraped_airlines = list(set(pd.read_csv('tripadvisor_all_clean.csv')['airline']))
 
-
-
 for link in airlines_links:
     scraped = []
     browser.get(link)
@@ -82,6 +80,7 @@ for link in airlines_links:
                     stars_container = review.find_element_by_class_name(
                         "location-review-review-list-parts-RatingLine__bubbles--GcJvM")
                     star = stars_container.find_element_by_tag_name('span').get_attribute("class")
+                    star = star.str[-2:-1]
                 except:
                     star = ""
 
@@ -96,6 +95,7 @@ for link in airlines_links:
                 try:
                     date = review.find_element_by_class_name(
                         'social-member-event-MemberEventOnObjectBlock__event_type--3njyv').text
+                    date = date.str.split('wrote a review').str[1]
                 except:
                     date = ""
 
@@ -110,8 +110,12 @@ for link in airlines_links:
                     route = infos_container[0].text
                     area = infos_container[1].text
                     trip_class = infos_container[2].text
+                    departure = route.str.split(' - ').str[0]
+                    arrival = route.str.split(' - ').str[0]
                 except:
                     route = ''
+                    departure = ''
+                    arrival = ''
                     area = ''
                     trip_class = ''
 
@@ -122,6 +126,8 @@ for link in airlines_links:
                                'date': date,
                                'contributions': contributions,
                                'route': route,
+                               'departure': departure,
+                               'arrival': arrival,
                                'area': area,
                                'trip_class': trip_class}
 
@@ -135,6 +141,7 @@ for link in airlines_links:
                         value = detail.find_element_by_class_name(
                             'location-review-review-list-parts-AdditionalRatings__bubbleRating--2eoRT')\
                             .find_element_by_tag_name('span').get_attribute("class")
+                        value = value.str[-2:-1]
                         details_dict[str(key)] = value
                 except:
                     pass
@@ -151,6 +158,10 @@ for link in airlines_links:
                 is_next_button_clickable = 0
 
         scraped = pd.DataFrame(scraped)
-        scraped.to_csv('Scraped/scraped' + str(airline) + '.csv')
+
+        if not scraped.empty:
+            scraped.to_csv('tripadvisor_all_clean.csv', mode='a', header=False, index=False)
+
 
 browser.close()
+
