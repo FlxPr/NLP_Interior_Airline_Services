@@ -36,6 +36,8 @@ def get_links(file_path=link_file_name):
     link_file = open(file_path, 'wt')
     link_file.write('\n'.join(link_list))
 
+    print("Scraped {} links to review pages from skytrax".format(len(link_list)))
+
 
 def scrap_review(review, airline_name, review_type):
     """
